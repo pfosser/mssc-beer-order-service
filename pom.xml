@@ -13,4 +13,11 @@
     <name>mssc-beer-order-service</name>
     <description>MSSC Beer Order Service</description>
 
+	<dependencies>
+		<dependency>
+			<groupId>com.github.stateless4j</groupId>
+			<artifactId>stateless4j</artifactId>
+			<version>2.6.0</version>
+		</dependency>
+	</dependencies>
 </project>
