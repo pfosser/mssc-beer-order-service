@@ -17,7 +17,10 @@ public class BeerOrderStateMachineConfig {
 
 		StateMachineConfig<BeerOrderStatusEnum, BeerOrderEventEnum> stateMachineConfig = new StateMachineConfig<>();
 
-		stateMachineConfig.configure(BeerOrderStatusEnum.NEW); //
+		stateMachineConfig.configure(BeerOrderStatusEnum.NEW) //
+			.ignore(BeerOrderEventEnum.VALIDATE_ORDER) //
+			.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
+			.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
 
 		// Stati terminali
 		stateMachineConfig.configure(BeerOrderStatusEnum.PICKED_UP); //
