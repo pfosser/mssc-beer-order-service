@@ -21,7 +21,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import guru.sfg.beer.order.service.domain.BeerOrder;
-import guru.sfg.beer.order.service.web.model.BeerOrderDto;
+import guru.sfg.brewery.model.BeerOrderDto;
 
 @Mapper(uses = { DateMapper.class, BeerOrderLineMapper.class })
 public interface BeerOrderMapper {
