@@ -14,4 +14,8 @@ public class BeerOrderStateMachine {
 	public BeerOrderStatusEnum getState() {
 		return machine.getState();
 	}
+
+	public void sendEvent(BeerOrderEventEnum event) {
+		machine.fire(event);
+	}
 }

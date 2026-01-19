@@ -1,5 +1,7 @@
 package guru.sfg.beer.order.service.sm;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Component;
 
 import com.github.oxo42.stateless4j.StateMachine;
@@ -9,11 +11,17 @@ import guru.sfg.beer.order.service.domain.BeerOrderEventEnum;
 import guru.sfg.beer.order.service.domain.BeerOrderStatusEnum;
 
 @Component
-public class BeerOrderStateMachineConfig {
+public class BeerOrderStateMachineFactory {
 
 	public BeerOrderStateMachine create() {
+		return createInternal(null, BeerOrderStatusEnum.NEW);
+	}
 
-		BeerOrderStatusEnum initialState = BeerOrderStatusEnum.NEW;
+	public BeerOrderStateMachine getStateMachine(UUID id, BeerOrderStatusEnum initialState) {
+		return createInternal(id, initialState);
+	}
+
+	private BeerOrderStateMachine createInternal(UUID id, BeerOrderStatusEnum initialState) {
 
 		StateMachineConfig<BeerOrderStatusEnum, BeerOrderEventEnum> stateMachineConfig = new StateMachineConfig<>();
 
@@ -32,4 +40,5 @@ public class BeerOrderStateMachineConfig {
 		return new BeerOrderStateMachine(
 				new StateMachine<BeerOrderStatusEnum, BeerOrderEventEnum>(initialState, stateMachineConfig));
 	}
+
 }
