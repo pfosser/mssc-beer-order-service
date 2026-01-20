@@ -37,7 +37,7 @@ public class BeerOrderStateMachineFactory {
 		StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig;
 
 		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.NEW) //
-				.ignore(BeerOrderEventEnum.VALIDATE_ORDER) //
+				.permit(BeerOrderEventEnum.VALIDATE_ORDER, BeerOrderStatusEnum.VALIDATION_PENDING) //
 				.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
 				.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
 		addPersistence(id, statusConfig);
