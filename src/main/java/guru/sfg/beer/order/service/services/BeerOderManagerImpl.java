@@ -1,5 +1,7 @@
 package guru.sfg.beer.order.service.services;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
 import guru.sfg.beer.order.service.domain.BeerOrder;
@@ -30,10 +32,10 @@ public class BeerOderManagerImpl implements BeerOrderManager {
 
 		return savedBeerOrder;
 	}
-	
+
 	private void sendBeeerOrderEvent(BeerOrder beerOrder, BeerOrderEventEnum event) {
 		BeerOrderStateMachine sm = build(beerOrder);
-		
+
 		sm.sendEvent(event);
 	}
 
@@ -41,5 +43,14 @@ public class BeerOderManagerImpl implements BeerOrderManager {
 		BeerOrderStateMachine sm = stateMachineConfig.getStateMachine(beerOrder.getId(), beerOrder.getOrderStatus());
 
 		return sm;
+	}
+
+	@Override
+	public void processValidationResult(UUID beerOrderId, Boolean isValid) {
+		BeerOrder beerOrder = beerOrderRepository.getReferenceById(beerOrderId);
+
+		BeerOrderStateMachine sm = build(beerOrder);
+
+		sm.sendEvent(isValid ? BeerOrderEventEnum.VALIDATION_PASSED : BeerOrderEventEnum.VALIDATION_FAILED);
 	}
 }
