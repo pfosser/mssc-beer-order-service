@@ -2,16 +2,21 @@ package guru.sfg.beer.order.service.sm;
 
 import java.util.UUID;
 
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 import com.github.oxo42.stateless4j.StateConfiguration;
 import com.github.oxo42.stateless4j.StateMachine;
 import com.github.oxo42.stateless4j.StateMachineConfig;
 
+import guru.sfg.beer.order.service.config.JmsConfig;
 import guru.sfg.beer.order.service.domain.BeerOrder;
 import guru.sfg.beer.order.service.domain.BeerOrderEventEnum;
 import guru.sfg.beer.order.service.domain.BeerOrderStatusEnum;
 import guru.sfg.beer.order.service.repositories.BeerOrderRepository;
+import guru.sfg.beer.order.service.web.mappers.BeerOrderMapper;
+import guru.sfg.brewery.model.BeerOrderDto;
+import guru.sfg.brewery.model.events.ValidateOrderRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 public class BeerOrderStateMachineFactory {
 
 	private final BeerOrderRepository beerOrderRepository;
+	private final BeerOrderMapper beerOrderMapper;
+	private final JmsTemplate jmsTemplate;
 
 	public BeerOrderStateMachine create() {
 		return createInternal(null, BeerOrderStatusEnum.NEW);
@@ -41,6 +48,19 @@ public class BeerOrderStateMachineFactory {
 				.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
 				.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
 		addPersistence(id, statusConfig);
+
+		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATION_PENDING); //
+		addPersistence(id, statusConfig);
+		statusConfig.onEntry(() -> {
+			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
+			BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
+
+			log.debug("Send validation request to queue for order id {}", id);
+
+			jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_QUEUE, ValidateOrderRequest.builder() //
+					.beerOrder(beerOrderDto) //
+					.build());
+		}); //
 
 		// Stati terminali
 		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.PICKED_UP); //
