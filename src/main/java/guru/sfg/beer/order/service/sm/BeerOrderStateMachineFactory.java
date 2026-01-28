@@ -16,6 +16,7 @@ import guru.sfg.beer.order.service.domain.BeerOrderStatusEnum;
 import guru.sfg.beer.order.service.repositories.BeerOrderRepository;
 import guru.sfg.beer.order.service.web.mappers.BeerOrderMapper;
 import guru.sfg.brewery.model.BeerOrderDto;
+import guru.sfg.brewery.model.events.AllocateOrderRequest;
 import guru.sfg.brewery.model.events.ValidateOrderRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,23 @@ public class BeerOrderStateMachineFactory {
 					.build());
 		}); //
 
+		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATED) //
+				.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING);
+		addPersistence(id, statusConfig);
+
+		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.ALLOCATION_PENDING); //
+		addPersistence(id, statusConfig);
+		statusConfig.onEntry(() -> {
+			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
+			BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
+
+			log.debug("Send allocation request to queue for order id {}", id);
+
+			jmsTemplate.convertAndSend(JmsConfig.ALLOCATE_ORDER_QUEUE, AllocateOrderRequest.builder() //
+					.beerOrder(beerOrderDto) //
+					.build());
+		}); //
+		
 		// Stati terminali
 		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.PICKED_UP); //
 		addPersistence(id, statusConfig);
