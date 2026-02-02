@@ -55,5 +55,6 @@ public class BeerOrderLineDto {
 	private UUID beerId;
 	@Builder.Default()
 	private Integer orderQuantity = 0;
+	private Integer quantityAllocated;
 	private BigDecimal price;
 }

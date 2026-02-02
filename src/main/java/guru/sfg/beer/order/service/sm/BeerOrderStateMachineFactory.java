@@ -67,7 +67,10 @@ public class BeerOrderStateMachineFactory {
 				.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING);
 		addPersistence(id, statusConfig);
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.ALLOCATION_PENDING); //
+		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.ALLOCATION_PENDING) //
+				.permit(BeerOrderEventEnum.ALLOCATION_SUCCESS, BeerOrderStatusEnum.ALLOCATED) //
+				.permit(BeerOrderEventEnum.ALLOCATION_FAILED, BeerOrderStatusEnum.ALLOCATION_EXCEPTION) //
+				.permit(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY, BeerOrderStatusEnum.PENDING_INVENTORY);
 		addPersistence(id, statusConfig);
 		statusConfig.onEntry(() -> {
 			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
@@ -79,7 +82,7 @@ public class BeerOrderStateMachineFactory {
 					.beerOrder(beerOrderDto) //
 					.build());
 		}); //
-		
+
 		// Stati terminali
 		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.PICKED_UP); //
 		addPersistence(id, statusConfig);
