@@ -45,12 +45,12 @@ public class BeerOrderStateMachineFactory {
 		StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig;
 
 		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.NEW) //
-				.permit(BeerOrderEventEnum.VALIDATE_ORDER, BeerOrderStatusEnum.VALIDATION_PENDING) //
-				.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
-				.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
+				.permit(BeerOrderEventEnum.VALIDATE_ORDER, BeerOrderStatusEnum.VALIDATION_PENDING);
 		addPersistence(id, statusConfig);
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATION_PENDING); //
+		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATION_PENDING) //
+				.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
+				.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
 		addPersistence(id, statusConfig);
 		statusConfig.onEntry(() -> {
 			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);

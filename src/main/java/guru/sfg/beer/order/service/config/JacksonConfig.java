@@ -9,9 +9,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
 public class JacksonConfig {
-    @Bean
-    @Primary
-    ObjectMapper objectMapper() {
-        return new ObjectMapper().registerModule(new JavaTimeModule());
-    }
+	@Bean
+	@Primary
+	ObjectMapper objectMapper() {
+		return new ObjectMapper().registerModule(new JavaTimeModule());
+	}
 }

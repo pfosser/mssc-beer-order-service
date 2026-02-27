@@ -34,12 +34,12 @@ public class BeerOderManagerImpl implements BeerOrderManager {
 		beerOrder.setOrderStatus(BeerOrderStatusEnum.NEW);
 
 		BeerOrder savedBeerOrder = beerOrderRepository.save(beerOrder);
-		sendBeeerOrderEvent(savedBeerOrder, BeerOrderEventEnum.VALIDATE_ORDER);
+		sendBeerOrderEvent(savedBeerOrder, BeerOrderEventEnum.VALIDATE_ORDER);
 
 		return savedBeerOrder;
 	}
 
-	private void sendBeeerOrderEvent(BeerOrder beerOrder, BeerOrderEventEnum event) {
+	private void sendBeerOrderEvent(BeerOrder beerOrder, BeerOrderEventEnum event) {
 		BeerOrderStateMachine sm = build(beerOrder);
 
 		sm.sendEvent(event);
@@ -51,20 +51,26 @@ public class BeerOderManagerImpl implements BeerOrderManager {
 		return sm;
 	}
 
+	@Transactional
 	@Override
 	public void processValidationResult(UUID beerOrderId, Boolean isValid) {
-		BeerOrder beerOrder = beerOrderRepository.getReferenceById(beerOrderId);
+		log.debug("Process validation result for beerOrderId {} valid? {}", beerOrderId, isValid);
 
-		BeerOrderStateMachine sm = build(beerOrder);
+		Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(beerOrderId);
 
-		if (isValid) {
-			sm.sendEvent(BeerOrderEventEnum.VALIDATION_PASSED);
+		beerOrderOptional.ifPresentOrElse(beerOrder -> {
 
-			sm.sendEvent(BeerOrderEventEnum.ALLOCATE_ORDER);
-		} else {
-			sm.sendEvent(BeerOrderEventEnum.VALIDATION_FAILED);
+			BeerOrderStateMachine sm = build(beerOrder);
 
-		}
+			if (isValid) {
+				sm.sendEvent(BeerOrderEventEnum.VALIDATION_PASSED);
+
+				sm.sendEvent(BeerOrderEventEnum.ALLOCATE_ORDER);
+			} else {
+				sm.sendEvent(BeerOrderEventEnum.VALIDATION_FAILED);
+
+			}
+		}, () -> log.error("Order not found. Id {}", beerOrderId));
 	}
 
 	@Override

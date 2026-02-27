@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
@@ -32,7 +30,6 @@ import guru.sfg.beer.order.service.repositories.CustomerRepository;
 import guru.sfg.beer.order.service.services.BeerOrderManager;
 import guru.sfg.beer.order.service.services.beer.BeerServiceImpl;
 import guru.sfg.brewery.model.BeerDto;
-import guru.sfg.brewery.model.BeerPagedList;
 
 @SpringBootTest
 @EnableWireMock({ @ConfigureWireMock(name = "wiremock", port = 8083) })
@@ -75,10 +72,8 @@ public class BeerOrderManagerImplIT {
 	}
 
 	@Test
-	void testNewAllocated() throws JsonProcessingException {
+	void testNewAllocated() throws JsonProcessingException, InterruptedException {
 		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
-		List<BeerDto> list = List.of(beerDto);
-		// BeerPagedList beerPagedList = new BeerPagedList(list, PageRequest.of(0, list.size()), list.size());
 
 		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345") //
 				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
@@ -86,6 +81,10 @@ public class BeerOrderManagerImplIT {
 		BeerOrder beerOrder = createBeerOrder();
 
 		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		Thread.sleep(5000);
+
+		savedBeerOrder = beerOrderRepository.findById(savedBeerOrder.getId()).get();
 
 		assertNotNull(savedBeerOrder);
 		assertEquals(BeerOrderStatusEnum.ALLOCATED, savedBeerOrder.getOrderStatus());
