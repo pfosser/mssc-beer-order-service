@@ -1,5 +1,6 @@
 package guru.sfg.beer.order.service;
 
+import static org.awaitility.Awaitility.await;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +84,12 @@ public class BeerOrderManagerImplIT {
 
 		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
 
-		Thread.sleep(5000);
+//		Thread.sleep(5000);
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			
+			Assertions.assertThat(BeerOrderStatusEnum.ALLOCATION_PENDING == foundOrder.getOrderStatus());
+		});
 
 		savedBeerOrder = beerOrderRepository.findById(savedBeerOrder.getId()).get();
 
