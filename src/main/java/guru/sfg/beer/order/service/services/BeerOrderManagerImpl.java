@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class BeerOderManagerImpl implements BeerOrderManager {
+public class BeerOrderManagerImpl implements BeerOrderManager {
 
 	private final BeerOrderStateMachineFactory stateMachineConfig;
 

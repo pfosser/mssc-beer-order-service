@@ -1,5 +1,6 @@
 package guru.sfg.beer.order.service.sm;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jms.core.JmsTemplate;
@@ -42,62 +43,99 @@ public class BeerOrderStateMachineFactory {
 
 		StateMachineConfig<BeerOrderStatusEnum, BeerOrderEventEnum> stateMachineConfig = new StateMachineConfig<>();
 
-		StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig;
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.NEW) //
+					.permit(BeerOrderEventEnum.VALIDATE_ORDER, BeerOrderStatusEnum.VALIDATION_PENDING);
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.NEW) //
-				.permit(BeerOrderEventEnum.VALIDATE_ORDER, BeerOrderStatusEnum.VALIDATION_PENDING);
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.VALIDATION_PENDING) //
+					.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
+					.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
+			addPersistence(id, statusConfig);
+			statusConfig.onEntry(() -> {
+				BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
+				BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATION_PENDING) //
-				.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
-				.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
-		addPersistence(id, statusConfig);
-		statusConfig.onEntry(() -> {
-			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
-			BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
+				log.debug("Send validation request to queue for order id {}", id);
 
-			log.debug("Send validation request to queue for order id {}", id);
+				jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_QUEUE, ValidateOrderRequest.builder() //
+						.beerOrder(beerOrderDto) //
+						.build());
+			}); //
 
-			jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_QUEUE, ValidateOrderRequest.builder() //
-					.beerOrder(beerOrderDto) //
-					.build());
-		}); //
+		}
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.VALIDATED) //
+					.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING);
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATED) //
-				.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING);
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.ALLOCATION_PENDING) //
+					.permit(BeerOrderEventEnum.ALLOCATION_SUCCESS, BeerOrderStatusEnum.ALLOCATED) //
+					.permit(BeerOrderEventEnum.ALLOCATION_FAILED, BeerOrderStatusEnum.ALLOCATION_EXCEPTION) //
+					.permit(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY, BeerOrderStatusEnum.PENDING_INVENTORY);
+			statusConfig.onEntry(() -> {
+				BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
+				BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.ALLOCATION_PENDING) //
-				.permit(BeerOrderEventEnum.ALLOCATION_SUCCESS, BeerOrderStatusEnum.ALLOCATED) //
-				.permit(BeerOrderEventEnum.ALLOCATION_FAILED, BeerOrderStatusEnum.ALLOCATION_EXCEPTION) //
-				.permit(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY, BeerOrderStatusEnum.PENDING_INVENTORY);
-		addPersistence(id, statusConfig);
-		statusConfig.onEntry(() -> {
-			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
-			BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
+				log.debug("Send allocation request to queue for order id {}", id);
 
-			log.debug("Send allocation request to queue for order id {}", id);
+				jmsTemplate.convertAndSend(JmsConfig.ALLOCATE_ORDER_QUEUE, AllocateOrderRequest.builder() //
+						.beerOrder(beerOrderDto) //
+						.build());
+			}); //
+			addPersistence(id, statusConfig);
+		}
 
-			jmsTemplate.convertAndSend(JmsConfig.ALLOCATE_ORDER_QUEUE, AllocateOrderRequest.builder() //
-					.beerOrder(beerOrderDto) //
-					.build());
-		}); //
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.ALLOCATED); //
+			addPersistence(id, statusConfig);
+		}
+
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.PENDING_INVENTORY); //
+			addPersistence(id, statusConfig);
+		}
 
 		// Stati terminali
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.PICKED_UP); //
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.PICKED_UP); //
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.DELIVERED); //
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.DELIVERED); //
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.DELIVERY_EXCEPTION); //
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.DELIVERY_EXCEPTION); //
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.VALIDATION_EXCEPTION); //
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.VALIDATION_EXCEPTION); //
+			addPersistence(id, statusConfig);
+		}
 
-		statusConfig = stateMachineConfig.configure(BeerOrderStatusEnum.ALLOCATION_EXCEPTION); //
-		addPersistence(id, statusConfig);
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.ALLOCATION_EXCEPTION); //
+			addPersistence(id, statusConfig);
+		}
 
 		return new BeerOrderStateMachine(
 				new StateMachine<BeerOrderStatusEnum, BeerOrderEventEnum>(initialState, stateMachineConfig));
@@ -109,9 +147,11 @@ public class BeerOrderStateMachineFactory {
 
 			log.debug("Saving beer order with id {} and state {}", id, transition.getDestination());
 
-			BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
-			beerOrder.setOrderStatus(transition.getDestination());
-			beerOrderRepository.saveAndFlush(beerOrder);
+			Optional<BeerOrder> beerOrderOpt = beerOrderRepository.findById(id);
+			beerOrderOpt.ifPresentOrElse(beerOrder -> {
+				beerOrder.setOrderStatus(transition.getDestination());
+				beerOrderRepository.saveAndFlush(beerOrder);
+			}, () -> log.error("Beer order not found for saving"));
 		}); //
 	}
 

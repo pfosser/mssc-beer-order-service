@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
@@ -33,7 +34,7 @@ import guru.sfg.beer.order.service.services.BeerOrderManager;
 import guru.sfg.beer.order.service.services.beer.BeerServiceImpl;
 import guru.sfg.brewery.model.BeerDto;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT)
 @EnableWireMock({ @ConfigureWireMock(name = "wiremock", port = 8083) })
 public class BeerOrderManagerImplIT {
 
@@ -83,18 +84,28 @@ public class BeerOrderManagerImplIT {
 		BeerOrder beerOrder = createBeerOrder();
 
 		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+		
+		Thread.sleep(5000);
 
-//		Thread.sleep(5000);
 		await().untilAsserted(() -> {
 			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
-			
-			Assertions.assertThat(BeerOrderStatusEnum.ALLOCATION_PENDING == foundOrder.getOrderStatus());
+
+			Assertions.assertThat(BeerOrderStatusEnum.ALLOCATED == foundOrder.getOrderStatus());
 		});
 
-		savedBeerOrder = beerOrderRepository.findById(savedBeerOrder.getId()).get();
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			BeerOrderLine line = foundOrder.getBeerOrderLines().iterator().next();
+			Assertions.assertThat(line.getOrderQuantity().equals(line.getQuantityAllocated()));
+		});
 
-		assertNotNull(savedBeerOrder);
-		assertEquals(BeerOrderStatusEnum.ALLOCATED, savedBeerOrder.getOrderStatus());
+		BeerOrder savedBeerOrder2 = beerOrderRepository.findById(savedBeerOrder.getId()).get();
+
+		assertNotNull(savedBeerOrder2);
+		assertEquals(BeerOrderStatusEnum.ALLOCATED, savedBeerOrder2.getOrderStatus());
+		savedBeerOrder2.getBeerOrderLines().forEach(line -> {
+			assertEquals(line.getOrderQuantity(), line.getQuantityAllocated());
+		});
 	}
 
 	public BeerOrder createBeerOrder() {
