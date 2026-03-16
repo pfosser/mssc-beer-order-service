@@ -96,7 +96,8 @@ public class BeerOrderStateMachineFactory {
 
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
-					.configure(BeerOrderStatusEnum.ALLOCATED); //
+					.configure(BeerOrderStatusEnum.ALLOCATED) //
+					.permit(BeerOrderEventEnum.BEER_ORDER_PICKED_UP, BeerOrderStatusEnum.PICKED_UP); //
 			addPersistence(id, statusConfig);
 		}
 
