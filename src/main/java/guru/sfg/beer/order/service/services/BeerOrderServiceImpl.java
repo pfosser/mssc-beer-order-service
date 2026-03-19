@@ -46,7 +46,7 @@ public class BeerOrderServiceImpl implements BeerOrderService {
 	private final BeerOrderRepository beerOrderRepository;
 	private final CustomerRepository customerRepository;
 	private final BeerOrderMapper beerOrderMapper;
-	private BeerOrderManager beerOrderManager;
+	private final BeerOrderManager beerOrderManager;
 
 	@Override
 	public BeerOrderPagedList listOrders(UUID customerId, Pageable pageable) {

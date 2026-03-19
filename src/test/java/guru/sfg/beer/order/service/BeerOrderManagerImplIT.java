@@ -105,6 +105,26 @@ public class BeerOrderManagerImplIT {
 			assertEquals(line.getOrderQuantity(), line.getQuantityAllocated());
 		});
 	}
+	
+	@Test
+	public void testFailedValidation() throws JsonProcessingException {
+		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
+
+		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345") //
+				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
+
+		BeerOrder beerOrder = createBeerOrder();
+		beerOrder.setCustomerRef("fail-validation");
+
+		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+
+			Assertions.assertThat(BeerOrderStatusEnum.VALIDATION_EXCEPTION == foundOrder.getOrderStatus());
+		});
+
+	}
 
 	@Test
 	public void testNewToPickedUp() throws JsonProcessingException {
