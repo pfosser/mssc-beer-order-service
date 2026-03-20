@@ -129,6 +129,9 @@ public class BeerOrderStateMachineFactory {
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.VALIDATION_EXCEPTION); //
+			statusConfig.onEntry(() -> {
+				log.error("Compensating transaction... Validation failed: {}", id);
+			});
 			addPersistence(id, statusConfig);
 		}
 
