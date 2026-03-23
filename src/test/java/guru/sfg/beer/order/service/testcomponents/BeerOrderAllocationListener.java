@@ -26,16 +26,14 @@ public class BeerOrderAllocationListener {
 		boolean sendResponse = true;
 
 		// set allocation error
-//		String customerRef = request.getBeerOrder().getCustomerRef();
-//		if (customerRef != null) {
-//			if (customerRef.equals("fail-allocation")) {
-//				allocationError = true;
-//			} else if (customerRef.equals("partial-allocation")) {
-//				pendingInventory = true;
-//			} else if (customerRef.equals("dont-allocate")) {
-//				sendResponse = false;
-//			}
-//		}
+		String customerRef = request.getBeerOrder().getCustomerRef();
+		if ("fail-allocation".equals(customerRef)) {
+			allocationError = true;
+		} else if ("partial-allocation".equals(customerRef)) {
+			pendingInventory = true;
+		} else if ("dont-allocate".equals(customerRef)) {
+			sendResponse = false;
+		}
 
 		boolean finalPendingInventory = pendingInventory;
 
