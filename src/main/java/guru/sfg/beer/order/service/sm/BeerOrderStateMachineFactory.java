@@ -18,6 +18,7 @@ import guru.sfg.beer.order.service.repositories.BeerOrderRepository;
 import guru.sfg.beer.order.service.web.mappers.BeerOrderMapper;
 import guru.sfg.brewery.model.BeerOrderDto;
 import guru.sfg.brewery.model.events.AllocateOrderRequest;
+import guru.sfg.brewery.model.events.AllocationFailureEvent;
 import guru.sfg.brewery.model.events.ValidateOrderRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -138,6 +139,11 @@ public class BeerOrderStateMachineFactory {
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.ALLOCATION_EXCEPTION); //
+			statusConfig.onEntry(() -> {
+				jmsTemplate.convertAndSend(JmsConfig.ALLOCATE_FAILURE_QUEUE, AllocationFailureEvent.builder() //
+						.orderId(id).build());
+				log.debug("Sent allocation failure message to queue for order id {}", id);
+			});
 			addPersistence(id, statusConfig);
 		}
 
