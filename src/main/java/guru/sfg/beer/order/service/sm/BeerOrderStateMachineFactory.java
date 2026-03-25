@@ -55,7 +55,8 @@ public class BeerOrderStateMachineFactory {
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.VALIDATION_PENDING) //
 					.permit(BeerOrderEventEnum.VALIDATION_PASSED, BeerOrderStatusEnum.VALIDATED) //
-					.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION);
+					.permit(BeerOrderEventEnum.VALIDATION_FAILED, BeerOrderStatusEnum.VALIDATION_EXCEPTION) //
+					.permit(BeerOrderEventEnum.CANCEL_ORDER, BeerOrderStatusEnum.CANCELED);
 			addPersistence(id, statusConfig);
 			statusConfig.onEntry(() -> {
 				BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
@@ -72,7 +73,8 @@ public class BeerOrderStateMachineFactory {
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.VALIDATED) //
-					.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING);
+					.permit(BeerOrderEventEnum.ALLOCATE_ORDER, BeerOrderStatusEnum.ALLOCATION_PENDING) //
+					.permit(BeerOrderEventEnum.CANCEL_ORDER, BeerOrderStatusEnum.CANCELED);
 			addPersistence(id, statusConfig);
 		}
 
@@ -81,7 +83,8 @@ public class BeerOrderStateMachineFactory {
 					.configure(BeerOrderStatusEnum.ALLOCATION_PENDING) //
 					.permit(BeerOrderEventEnum.ALLOCATION_SUCCESS, BeerOrderStatusEnum.ALLOCATED) //
 					.permit(BeerOrderEventEnum.ALLOCATION_FAILED, BeerOrderStatusEnum.ALLOCATION_EXCEPTION) //
-					.permit(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY, BeerOrderStatusEnum.PENDING_INVENTORY);
+					.permit(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY, BeerOrderStatusEnum.PENDING_INVENTORY) //
+					.permit(BeerOrderEventEnum.CANCEL_ORDER, BeerOrderStatusEnum.CANCELED);
 			statusConfig.onEntry(() -> {
 				BeerOrder beerOrder = beerOrderRepository.getReferenceById(id);
 				BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
@@ -98,7 +101,8 @@ public class BeerOrderStateMachineFactory {
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.ALLOCATED) //
-					.permit(BeerOrderEventEnum.BEER_ORDER_PICKED_UP, BeerOrderStatusEnum.PICKED_UP); //
+					.permit(BeerOrderEventEnum.BEER_ORDER_PICKED_UP, BeerOrderStatusEnum.PICKED_UP) //
+					.permit(BeerOrderEventEnum.CANCEL_ORDER, BeerOrderStatusEnum.CANCELED);
 			addPersistence(id, statusConfig);
 		}
 
@@ -144,6 +148,12 @@ public class BeerOrderStateMachineFactory {
 						.orderId(id).build());
 				log.debug("Sent allocation failure message to queue for order id {}", id);
 			});
+			addPersistence(id, statusConfig);
+		}
+		
+		{
+			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
+					.configure(BeerOrderStatusEnum.CANCELED); //
 			addPersistence(id, statusConfig);
 		}
 
