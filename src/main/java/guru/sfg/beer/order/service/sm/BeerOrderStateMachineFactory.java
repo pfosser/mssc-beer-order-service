@@ -19,6 +19,7 @@ import guru.sfg.beer.order.service.web.mappers.BeerOrderMapper;
 import guru.sfg.brewery.model.BeerOrderDto;
 import guru.sfg.brewery.model.events.AllocateOrderRequest;
 import guru.sfg.brewery.model.events.AllocationFailureEvent;
+import guru.sfg.brewery.model.events.DeallocateOrderRequest;
 import guru.sfg.brewery.model.events.ValidateOrderRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -150,10 +151,25 @@ public class BeerOrderStateMachineFactory {
 			});
 			addPersistence(id, statusConfig);
 		}
-		
+
 		{
 			StateConfiguration<BeerOrderStatusEnum, BeerOrderEventEnum> statusConfig = stateMachineConfig
 					.configure(BeerOrderStatusEnum.CANCELED); //
+			statusConfig.onEntry((transition) -> {
+				if (transition.getSource() == BeerOrderStatusEnum.ALLOCATED) {
+					Optional<BeerOrder> beerOrderOpt = beerOrderRepository.findById(id);
+					beerOrderOpt.ifPresentOrElse((beerOrder) -> {
+
+						BeerOrderDto beerOrderDto = beerOrderMapper.beerOrderToDto(beerOrder);
+
+						log.debug("Send deallocation request to queue for order id {}", id);
+
+						jmsTemplate.convertAndSend(JmsConfig.DEALLOCATE_ORDER_QUEUE, DeallocateOrderRequest.builder() //
+								.beerOrder(beerOrderDto) //
+								.build());
+					}, () -> log.error("Beer order with id {} not found", id));
+				}
+			});
 			addPersistence(id, statusConfig);
 		}
 
