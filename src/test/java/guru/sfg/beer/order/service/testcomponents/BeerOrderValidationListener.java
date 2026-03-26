@@ -15,20 +15,23 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Component
 public class BeerOrderValidationListener {
-	
+
 	private final JmsTemplate jmsTemplate;
 
 	@JmsListener(destination = JmsConfig.VALIDATE_ORDER_QUEUE)
 	public void listen(Message<ValidateOrderRequest> msg) {
-		
+
 		ValidateOrderRequest request = msg.getPayload();
-		
+
 		boolean isValid = !"fail-validation".equals(request.getBeerOrder().getCustomerRef());
 
-		jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_RESPONSE_QUEUE, 
-				ValidateOrderResult.builder() //
-				.isValid(isValid) //
-				.orderId(request.getBeerOrder().getId()) //
-				.build()); //
+		boolean sendResponse = !"dont-validate".equals(request.getBeerOrder().getCustomerRef());
+
+		if (sendResponse) {
+			jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_RESPONSE_QUEUE, ValidateOrderResult.builder() //
+					.isValid(isValid) //
+					.orderId(request.getBeerOrder().getId()) //
+					.build()); //
+		}
 	}
 }
