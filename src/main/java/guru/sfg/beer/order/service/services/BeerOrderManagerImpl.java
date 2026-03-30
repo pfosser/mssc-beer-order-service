@@ -65,10 +65,15 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 			if (isValid) {
 				sm.sendEvent(BeerOrderEventEnum.VALIDATION_PASSED);
 
-				sm.sendEvent(BeerOrderEventEnum.ALLOCATE_ORDER);
+				awaitForStatus(beerOrderId, BeerOrderStatusEnum.VALIDATED);
+
+				BeerOrder validatedOrder = beerOrderRepository.findById(beerOrderId).get();
+
+				BeerOrderStateMachine validSm = build(validatedOrder);
+
+				validSm.sendEvent(BeerOrderEventEnum.ALLOCATE_ORDER);
 			} else {
 				sm.sendEvent(BeerOrderEventEnum.VALIDATION_FAILED);
-
 			}
 		}, () -> log.error("Order not found. Id {}", beerOrderId));
 	}
@@ -124,7 +129,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		}, () -> log.error("Order Not Found. Id: " + beerOrderDto.getId()));
 
 	}
-	
+
 	@Override
 	public void beerOrderPickedUp(UUID id) {
 		Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(id);
@@ -133,7 +138,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.BEER_ORDER_PICKED_UP);
 		}, () -> log.error("Order Not Found. Id: " + id));
 	}
-	
+
 	@Override
 	public void cancelOrder(UUID id) {
 		beerOrderRepository.findById(id).ifPresentOrElse(beerOrder -> {
