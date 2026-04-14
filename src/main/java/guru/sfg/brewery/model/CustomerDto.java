@@ -46,8 +46,8 @@ public class CustomerDto {
 
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssZ", shape = JsonFormat.Shape.STRING)
 	@JsonProperty("lastModifiedDate")
-
 	private OffsetDateTime lastModifiedDate;
-	private String name;
+
+	private String customerName;
 
 }
