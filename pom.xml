@@ -46,4 +46,35 @@
 			<artifactId>spring-boot-starter-restclient</artifactId>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- Attiva Jib EREDITANDO la base dal BOM ma personalizzando il
+			nome dell'app -->
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<!-- NO <version> qui! La decide il BOM in <pluginManagement> -->
+				<configuration>
+					<to>
+						<image>
+							${project.artifactId}:${project.version}</image>
+					</to>
+					<container>
+						<ports>
+							<!-- Porta specifica di questo servizio -->
+							<port>8080</port>
+						</ports>
+						<labels>
+							<PROJECT_NAME>${project.artifactId}</PROJECT_NAME>
+						</labels>
+					</container>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
